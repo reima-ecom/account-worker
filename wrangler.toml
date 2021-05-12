@@ -1,0 +1,10 @@
+name = "account-worker"
+type = "javascript"
+account_id = "25fd4a605fa32029740e7374ebb26cab"
+route = ""
+zone_id = ""
+workers_dev = true
+
+[build]
+upload.format = "service-worker"
+command = "deno bundle src/sw.ts worker/sw.js"
