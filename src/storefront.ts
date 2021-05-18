@@ -109,3 +109,40 @@ export const getCustomerInfo = async (
     })),
   };
 };
+
+export const _getCheckoutId = (checkoutUrl: string): string => {
+  const idAndKeyMatch = checkoutUrl.match(/\/checkouts\/(.*)&/);
+  if (!idAndKeyMatch) throw new Error("Invalid checkout url");
+  return btoa(`gid://shopify/Checkout/${idAndKeyMatch[1]}`);
+};
+
+export const associateCheckoutWithCustomer = async (
+  storefront: ShopifyStorefront,
+  checkoutUrl: string,
+  customerAccessToken: string,
+) => {
+  const checkoutId = _getCheckoutId(checkoutUrl);
+  const { checkoutCustomerAssociateV2: {checkout, checkoutUserErrors, customer }} = await query(
+    storefront,
+    `
+    mutation {
+      checkoutCustomerAssociateV2(checkoutId: "${checkoutId}", customerAccessToken: "${customerAccessToken}") {
+        checkout {
+          id
+          email
+          webUrl
+        }
+        checkoutUserErrors {
+          code
+          field
+          message
+        }
+        customer {
+          id
+          lastIncompleteCheckout { id }
+        }
+      }
+    }`,
+  );
+  console.log(checkout, checkoutUserErrors, customer);
+};

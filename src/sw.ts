@@ -1,5 +1,6 @@
 import "https://raw.githubusercontent.com/ericselin/worker-types/v1.0.1/cloudflare-worker-types.ts";
 import {
+  associateCheckoutWithCustomer,
   getCustomerInfo,
   getCustomerToken,
   getShopifyStorefront,
@@ -33,10 +34,17 @@ const loginRedirect = (store: ShopifyStorefront): RequestHandler =>
       throw new Error("Invalid");
     }
     const token = await getCustomerToken(store, email, password);
-    return new Response("Redirecting to account page", {
+    let redirectLocation = '/account/';
+    // if we have a checkout_url, associate that checkout with the customer and redirect to checkout
+    const checkoutUrl = new URL(request.url).searchParams.get('checkout_url');
+    if (checkoutUrl) {
+      await associateCheckoutWithCustomer(store, checkoutUrl, token);
+      redirectLocation = checkoutUrl;
+    }
+    return new Response("Redirecting", {
       status: 302,
       headers: {
-        "Location": "/account/",
+        "Location": redirectLocation,
         "Set-Cookie": getCustomerTokenSetCookie(token),
       },
     });
@@ -86,6 +94,7 @@ const handler = async (event: FetchEvent) => {
 
   // these routes can be accessed by anyone
   switch (route) {
+    case "GET:/account/login":
     case "GET:/account/login/":
       return loginForm(request);
     case "POST:/account/login/":
